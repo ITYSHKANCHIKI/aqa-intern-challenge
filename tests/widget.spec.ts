@@ -1,10 +1,17 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, BrowserContext, Page } from '@playwright/test';
 import { WidgetPage } from "./widget.page";
 
-test.describe('Uchi.ru widget', () => {
+test.describe.serial('Uchi.ru widget', () => {
+  let context: BrowserContext;
+  let page: Page;
   let widgetPage: WidgetPage;
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext({
+      baseURL: 'https://uchi.ru',
+    });
+
+    page = await context.newPage();
     widgetPage = new WidgetPage(page);
 
     await page.goto('/', {
@@ -18,8 +25,25 @@ test.describe('Uchi.ru widget', () => {
       await cookieButton.waitFor({ state: 'visible', timeout: 5000 });
       await cookieButton.click();
     } catch {
-      // Cookie banner may already be accepted or may not be shown.
+      // Cookie banner is not always shown.
     }
+
+    await widgetPage.waitForWidgetButton();
+  });
+
+  test.afterEach(async () => {
+    try {
+      if (await widgetPage.getWidgetBody().isVisible()) {
+        await widgetPage.closeWidget();
+        await expect(widgetPage.getWidgetBody()).toBeHidden({ timeout: 10000 });
+      }
+    } catch {
+      // The widget may already be closed.
+    }
+  });
+
+  test.afterAll(async () => {
+    await context.close();
   });
 
   test('opens', async () => {
