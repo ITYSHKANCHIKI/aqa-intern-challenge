@@ -14,25 +14,33 @@ test.describe.serial('Uchi.ru widget', () => {
     page = await context.newPage();
     widgetPage = new WidgetPage(page);
 
+    const cookieOverlay = page.locator('._UCHI_COOKIE__wrap_show');
+
+    await page.addLocatorHandler(cookieOverlay, async () => {
+      const cookieButton = page.locator('._UCHI_COOKIE__button');
+
+      if (await cookieButton.isVisible()) {
+        await cookieButton.click();
+      }
+    });
+
     await page.goto('/', {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
 
-    const cookieButton = page.locator('._UCHI_COOKIE__button');
-
-    try {
-      await cookieButton.waitFor({ state: 'visible', timeout: 5000 });
-      await cookieButton.click();
-    } catch {
-      // Cookie banner is not always shown.
-    }
-
+    await widgetPage.dismissCookieBanner();
     await widgetPage.waitForWidgetButton();
+  });
+
+  test.beforeEach(async () => {
+    await widgetPage.dismissCookieBanner();
   });
 
   test.afterEach(async () => {
     try {
+      await widgetPage.dismissCookieBanner();
+
       if (await widgetPage.getWidgetBody().isVisible()) {
         await widgetPage.closeWidget();
         await expect(widgetPage.getWidgetBody()).toBeHidden({ timeout: 10000 });
@@ -60,6 +68,7 @@ test.describe.serial('Uchi.ru widget', () => {
     await expect(articles.first()).toBeVisible({ timeout: 10000 });
     await articles.first().click();
 
+    await widgetPage.dismissCookieBanner();
     await widgetPage.clickWriteToUs();
 
     await expect.poll(
