@@ -9,6 +9,7 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'https://uchi.ru',
+    headless: false,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     navigationTimeout: 30000,
